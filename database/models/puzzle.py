@@ -1,6 +1,6 @@
 import enum
 from typing import Optional, Dict, Any
-from sqlalchemy import String, Enum, ForeignKey, Integer, JSON
+from sqlalchemy import Column, String, Enum, Integer, ForeignKey, DateTime, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.models.base import Base, TimestampMixin
 
