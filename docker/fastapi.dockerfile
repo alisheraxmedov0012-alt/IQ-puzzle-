@@ -1,5 +1,5 @@
-# Base image sifatida eng yengil va barqaror variantni olamiz
-FROM python:3.13-slim AS builder
+# Base image sifatida Python 3.12-slim olamiz
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 
 # Yakuniy minimal Production bosqichi
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -33,5 +33,4 @@ USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
