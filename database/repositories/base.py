@@ -29,7 +29,7 @@ class BaseRepository(Generic[ModelType]):
         await self.session.flush()  # ID generation uchun flush qilamiz
         return obj_in
 
-    async def update(self, db_obj: ModelType, obj_in: Dict[str, Any]) -> ModelType:
+    async def update(self, db_obj: ModelType, obj_in: dict[str, Any]) -> ModelType:
         """Mavjud yozuvni yangilash."""
         for field in obj_in:
             if hasattr(db_obj, field):
