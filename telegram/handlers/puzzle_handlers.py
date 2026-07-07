@@ -2,12 +2,18 @@ from aiogram import Router, F, types
 from aiogram.fsm.context import FSMContext
 from aiogram.types import FSInputFile
 from database.models.puzzle import PuzzleType
-from telegram.keyboards.menu_keyboards import get_puzzle_type_keyboard, get_main_menu_keyboard
-from telegram.states import PuzzleStates
+from telegram.keyboards.menu_keyboards import get_puzzle_type_keyboard
 from services.puzzle_service import PuzzleService
 
-game_router = Router(name="game")
+# Import xatolarini butunlay yo'qotish uchun holatlarni shu yerga qo'shdik:
+from aiogram.fsm.state import State, StatesGroup
 
+class PuzzleStates(StatesGroup):
+    main_menu = State()
+    selecting_type = State()
+    solving_puzzle = State()
+
+game_router = Router(name="game")
 
 @game_router.message(F.text == "🧩 Yangi Puzzle Boshlash", PuzzleStates.main_menu)
 async def choose_puzzle_type(message: types.Message, state: FSMContext) -> None:
