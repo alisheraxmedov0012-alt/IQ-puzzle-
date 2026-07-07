@@ -5,7 +5,7 @@ from database.models.puzzle import PuzzleType
 from telegram.keyboards.menu_keyboards import get_puzzle_type_keyboard
 from services.puzzle_service import PuzzleService
 
-# Import xatolarini butunlay yo'qotish uchun holatlarni shu yerga qo'shdik:
+# Import xatolarini butunlay yo'qotish uchun holatlarni shu yerga qo'shdik
 from aiogram.fsm.state import State, StatesGroup
 
 class PuzzleStates(StatesGroup):
@@ -19,27 +19,27 @@ game_router = Router(name="game")
 async def choose_puzzle_type(message: types.Message, state: FSMContext) -> None:
     """O'yin turlari menyusini chiqarish."""
     await state.set_state(PuzzleStates.selecting_type)
-    await message.answer("Qaysi turdagi mantiqiy puzzleni yechmoqchisiz? Tanlang:", reply_markup=get_puzzle_type_keyboard())
+    await message.answer("Qaysi turdagi mantiqiy puzzlelarni yechmoqchisiz? Tanlang:", reply_markup=get_puzzle_type_keyboard())
 
 
 @game_router.callback_query(F.data.startswith("play:"), PuzzleStates.selecting_type)
 async def start_puzzle_session(callback: types.CallbackQuery, puzzle_service: PuzzleService, state: FSMContext) -> None:
     """Tanlangan o'yin turi bo'yicha puzzle generatsiya qilib, foydalanuvchiga yuborish."""
     await callback.answer()
-    
+
     puzzle_type_str = callback.data.split(":")[1]
     puzzle_type = PuzzleType(puzzle_type_str)
-    
+
     # Servis orqali yangi yoki mavjud faol o'yinni olamiz
     puzzle, session = await puzzle_service.get_or_create_active_puzzle(callback.from_user.id, puzzle_type)
-    
+
     # FSM holatni "Javob berish" rejimiga o'tkazamiz
     await state.set_state(PuzzleStates.solving_puzzle)
-    
+
     # Rasmni tayyorlab Telegram orqali yuboramiz
     photo = FSInputFile(puzzle.image_path)
-    
-        await callback.message.answer_photo(
+
+    await callback.message.answer_photo(
         photo=photo,
         caption=(
             f"🧠 <b>Yangi topshiriq!</b>\n\n"
@@ -55,7 +55,7 @@ async def start_puzzle_session(callback: types.CallbackQuery, puzzle_service: Pu
 
 
 @game_router.message(PuzzleStates.solving_puzzle)
-async def process_puzzle_answer(message: types.Message, puzzle_service: PuzzleService, state: FSMContext):
+async def process_puzzle_answer(message: types.Message, puzzle_service: PuzzleService, state: FSMContext) -> None:
     """Foydalanuvchi javobini qabul qilib tekshirish."""
     user_id = message.from_user.id
     user_answer = message.text.strip()
@@ -87,5 +87,5 @@ async def process_puzzle_answer(message: types.Message, puzzle_service: PuzzleSe
                 f"❌ <b>Noto'g'ri javob!</b>\n"
                 f"⚠️ Qayta urinib ko'ring. Sizda yana <b>{session.max_attempts - session.attempts}</b> ta imkoniyat bor.",
                 parse_mode="HTML"
-)
+            )
             
