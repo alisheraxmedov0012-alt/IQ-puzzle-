@@ -1,4 +1,5 @@
 import asyncio
+import os
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from aiogram import Bot, Dispatcher
@@ -20,7 +21,7 @@ app = FastAPI(
     docs_url="/docs" if settings.DEBUG else None
 )
 
-# 2. Telegram Bot va Dispatcher obyektlarini yaratamiz
+# 2. Telegram Bot va Dispatcher ob'ektlarini yaratamiz
 bot = Bot(token=settings.BOT_TOKEN)
 dp = Dispatcher()
 
@@ -31,27 +32,30 @@ dp.update.middleware(DbSessionMiddleware())
 dp.include_router(command_router)
 dp.include_router(game_router)
 
-
 @app.on_event("startup")
 async def on_startup() -> None:
-    """FastAPI ishga tushganda o'z navbatida bot middleware va webhooklarini sozlash."""
-    # Throttling middleware uchun redis instance'ni uzatamiz
+    """FastAPI ishga tushganda bot middleware va webhooklarini sozlash."""
     dp.update.middleware(ThrottlingMiddleware(redis=app.state.redis))
-    
-    # Bot webhook manzilini o'rnatamiz (Production muhitida domen bo'lishi kerak)
-    webhook_url = f"https://yourdomain.com/webhook/bot"
+
+    # Webhook manzilini Railway-ga moslab sozlaymiz
+    railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", settings.PROJECT_NAME)
+    if not railway_domain.startswith("http"):
+        webhook_url = f"https://{railway_domain}/webhook/bot"
+    else:
+        webhook_url = f"{railway_domain}/webhook/bot"
+
     await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
     logger.info(f"Telegram Webhook o'rnatildi: {webhook_url}")
 
 
 @app.post("/webhook/bot")
 async def telegram_webhook(request: Request) -> JSONResponse:
-    """Telegramdan keladigan har bir xabarni (Update) qabul qiluvchi yagona endpoint."""
+    """Telegramdan keladigan har bir xabarni qabul qiluvchi yagona endpoint."""
     try:
         update_json = await request.json()
         update = Update.model_validate(update_json, context={"bot": bot})
         
-        # aiogram asinxron event loop ichida xabarni qayta ishlaydi
+        # Aiogram asinxron event loop ichida xabarni qayta ishlaydi
         asyncio.create_task(dp.feed_update(bot, update))
         return JSONResponse(status_code=status.HTTP_200_OK, content={"status": "queued"})
     except Exception as e:
@@ -67,4 +71,4 @@ async def custom_exception_handler(request: Request, exc: PuzzleForgeException) 
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"success": False, "error_code": exc.code, "message": exc.message}
     )
-  
+    
