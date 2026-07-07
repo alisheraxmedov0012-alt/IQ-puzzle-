@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from database.models.user import User
 from database.repositories.user_repository import UserRepository
 from telegram.keyboards.menu_keyboards import get_main_menu_keyboard
-from ..puzzle_states import PuzzleStates
+from app.telegram.puzzle_states import PuzzleStates
 
 command_router = Router(name="commands")
 
