@@ -39,22 +39,23 @@ async def start_puzzle_session(callback: types.CallbackQuery, puzzle_service: Pu
     # Rasmni tayyorlab Telegram orqali yuboramiz
     photo = FSInputFile(puzzle.image_path)
     
-    await callback.message.answer_photo(
+        await callback.message.answer_photo(
         photo=photo,
         caption=(
-            f"🎯 **Yangi topshiriq\!**\n\n"
-            f"💡 Turi: `{puzzle_type.value.upper()}`\n"
-            f"⚠️ Sizda jami **{session.max_attempts} ta** urinish bor\.\n\n"
-            f"📝 Javobingizni quyida matn ko'rinishida yozib yuboring\:"
+            f"🧠 <b>Yangi topshiriq!</b>\n\n"
+            f"📊 Turi: {puzzle.puzzle_type.value.upper()}\n"
+            f"⚠️ Sizda jami <b>{session.max_attempts}</b> ta urinish bor.\n"
+            f"📝 Javobingizni quyida matn ko'rinishida yozib yuboring:"
         ),
-        parse_mode="MarkdownV2"
+        parse_mode="HTML"
     )
+    
     # Eski callback xabarini o'chirib tashlaymiz
     await callback.message.delete()
 
 
 @game_router.message(PuzzleStates.solving_puzzle)
-async def process_puzzle_answer(message: types.Message, puzzle_service: PuzzleService, state: FSMContext) -> None:
+async def process_puzzle_answer(message: types.Message, puzzle_service: PuzzleService, state: FSMContext):
     """Foydalanuvchi javobini qabul qilib tekshirish."""
     user_id = message.from_user.id
     user_answer = message.text.strip()
@@ -64,27 +65,27 @@ async def process_puzzle_answer(message: types.Message, puzzle_service: PuzzleSe
     
     if is_correct:
         await message.answer(
-            f"🎉 **Tabriklaymiz\! To'g'ri javob\!**\n"
-            f"⏱ Sarflangan vaqt: `{session.solve_time}` soniya\.\n"
-            f"🔢 Urinishlar soni: `{session.attempts}` ta\.",
+            f"🎉 <b>Tabriklaymiz! To'g'ri javob!</b>\n\n"
+            f"⏱️ Sarflangan vaqt: {session.solve_time} soniya.\n"
+            f"🔢 Urinishlar soni: {session.attempts} ta.",
             reply_markup=get_main_menu_keyboard(),
-            parse_mode="MarkdownV2"
+            parse_mode="HTML"
         )
         await state.set_state(PuzzleStates.main_menu)
         
     else:
         if session.status.value == "failed":
             await message.answer(
-                f"❌ **Afsuski, barcha urinishlaringiz tugadi\!**\n"
-                f"O'yin yakunlandi\. Keyingi safar albatta omadingiz keladi\!",
+                f"❌ <b>Afsuski, barcha urinishlaringiz tugadi!</b>\n"
+                f"O'yin yakunlandi. Keyingi safar albatta omadingiz keladi!",
                 reply_markup=get_main_menu_keyboard(),
-                parse_mode="MarkdownV2"
+                parse_mode="HTML"
             )
             await state.set_state(PuzzleStates.main_menu)
         else:
             await message.answer(
-                f"❌ **Noto'g'ri javob\!**\n"
-                f"Qayta urinib ko'ring\. Sizda yana **{session.max_attempts - session.attempts} ta** imkoniyat bor\.",
-                parse_mode="MarkdownV2"
-            )
-          
+                f"❌ <b>Noto'g'ri javob!</b>\n"
+                f"⚠️ Qayta urinib ko'ring. Sizda yana <b>{session.max_attempts - session.attempts}</b> ta imkoniyat bor.",
+                parse_mode="HTML"
+)
+            
