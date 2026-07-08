@@ -1,4 +1,5 @@
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
@@ -30,8 +31,17 @@ async def app_lifespan(fastapi_app: FastAPI):
         # Throttling middleware'ga loyihangiz ulagan tayyor redis obyektini uzatamiz
         dp.update.middleware(ThrottlingMiddleware(redis=fastapi_app.state.redis))
         
-        # Railway bergan aniq domen manzili
-        webhook_url = "https://iq-puzzle-production.up.railway.app/webhook/bot"
+        # Railway bergan domenni avtomatik aniqlaymiz, topilmasa standart zaxira manzil olinadi
+        raw_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "iq-puzzle-production.up.railway.app")
+        
+        if not raw_domain.startswith("http"):
+            webhook_url = f"https://{raw_domain}/webhook/bot"
+        else:
+            webhook_url = f"{raw_domain}/webhook/bot"
+            
+        # Eski tiqilib qolgan yangilanishlarni majburan tozalaymiz
+        await bot.delete_webhook(drop_pending_updates=True)
+        await asyncio.sleep(1)
         
         await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
         logger.info(f"🔥 Telegram Webhook muvaffaqiyatli o'rnatildi: {webhook_url}")
