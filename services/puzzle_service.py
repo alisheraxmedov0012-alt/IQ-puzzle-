@@ -29,7 +29,7 @@ class PuzzleService:
         # O'yin dvigatellari xaritasi (Strategy Pattern)
         self.engines = {
             PuzzleType.MATCHSTICK: MatchstickEngine(),
-            PuzzleType.GRID_IQ: IQMatrixEngine()  # IQ matrix nomlanishiga moslab
+            PuzzleType.IQ_MATRIX: IQMatrixEngine(),
         }
 
     async def get_or_create_active_puzzle(self, user_id: int, puzzle_type: PuzzleType) -> Tuple[Puzzle, PuzzleSession]:
