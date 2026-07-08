@@ -1,5 +1,4 @@
 import asyncio
-import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
@@ -8,6 +7,7 @@ from aiogram.types import Update
 from core.config import settings
 from core.logger import logger
 from core.exceptions import PuzzleForgeException
+from app.lifespan import lifespan
 from telegram.handlers.commands import command_router
 from telegram.handlers.puzzle_handlers import game_router
 from telegram.middlewares.db_middleware import DbSessionMiddleware
@@ -22,24 +22,26 @@ dp.update.middleware(DbSessionMiddleware())
 dp.include_router(command_router)
 dp.include_router(game_router)
 
-# 2. To'g'ri Lifespan boshqaruvi (Webhookni xatosiz ulash joyi)
+# 2. Loyihangizning o'z asl lifespan funksiyasini kengaytiramiz
 @asynccontextmanager
 async def app_lifespan(fastapi_app: FastAPI):
-    # Bu yer server ishga tushganda (startup) bajariladi
-    from core.redis_client import redis_client
-    dp.update.middleware(ThrottlingMiddleware(redis=redis_client))
-    
-    # Railway bergan aniq domen manzili
-    webhook_url = "https://iq-puzzle-production.up.railway.app/webhook/bot"
-    
-    await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
-    logger.info(f"🔥 Telegram Webhook muvaffaqiyatli o'rnatildi: {webhook_url}")
-    
-    yield
-    # Bu yer server to'xtaganda (shutdown) bajariladi
-    await bot.delete_webhook()
+    # Loyihangizning o'z maxsus lifespan kodini ishga tushiramiz (Baza va Redis ulanadi)
+    async with lifespan(fastapi_app):
+        # Throttling middleware'ga loyihangiz ulagan tayyor redis obyektini uzatamiz
+        dp.update.middleware(ThrottlingMiddleware(redis=fastapi_app.state.redis))
+        
+        # Railway bergan aniq domen manzili
+        webhook_url = "https://iq-puzzle-production.up.railway.app/webhook/bot"
+        
+        await bot.set_webhook(url=webhook_url, drop_pending_updates=True)
+        logger.info(f"🔥 Telegram Webhook muvaffaqiyatli o'rnatildi: {webhook_url}")
+        
+        yield
+        
+        # Server o'chganda webhookni tozalaymiz
+        await bot.delete_webhook()
 
-# 3. FastAPI ilovasini yangi lifespan bilan yaratamiz
+# 3. FastAPI ilovasini yangilangan lifespan bilan yaratamiz
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="1.0.0",
@@ -67,5 +69,5 @@ async def custom_exception_handler(request: Request, exc: PuzzleForgeException) 
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"success": False, "error_code": exc.code, "message": exc.message}
-        )
+    )
     
